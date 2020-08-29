@@ -1,0 +1,31 @@
+.main-page-container {
+  display: flex;
+  padding: 5rem;
+  align-items: center;
+  flex-direction: column;
+
+  .header {
+    font-size: 3rem;
+    font-weight: bold;
+    padding-bottom: 1rem;
+  }
+
+  .button {
+    cursor: pointer;
+    color: white;
+    width: 10rem;
+    text-align: center;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    padding: 1rem 2rem;
+    background-color: #f64e5a;
+    border: solid 1px white;
+    transition: all 0.3s;
+
+    &:hover {
+      border: solid 1px #f64e5a;
+      background: white;
+      color: #f64e5a;
+    }
+  }
+}
