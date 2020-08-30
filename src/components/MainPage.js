@@ -55,7 +55,10 @@ class MainPage extends React.Component {
     const { socket, username } = this.props
 
     socket.on("join room", response => {
-      console.log(response)
+      if(response.status === "Ok") {
+        this.props.setPlayers(response.name)
+        this.props.history.push(`/lobby/${roomId}`)
+      }
     })
     socket.emit("join room", { name: username, code: roomId })
   }
@@ -66,8 +69,7 @@ class MainPage extends React.Component {
     socket.on("create room", response => {
       if(response.status === "Ok") {
         this.setState({
-          roomId: response.code,
-          redirect: `/lobby/${this.state.roomId}`
+          roomId: response.code
         })
         this.props.history.push(`/lobby/${this.state.roomId}`)
       }

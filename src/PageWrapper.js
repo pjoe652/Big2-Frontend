@@ -15,7 +15,8 @@ class PageWrapper extends React.Component {
       username: "",
       roomId: "",
       redirect: null,
-      socket: null
+      socket: null,
+      currentPlayers: null
     }
   }
 
@@ -23,6 +24,12 @@ class PageWrapper extends React.Component {
     this.setState({
       username: e.target.value,
       errored: false
+    })
+  }
+
+  setPlayers = (players) => {
+    this.setState({
+      currentPlayers: players
     })
   }
 
@@ -37,10 +44,10 @@ class PageWrapper extends React.Component {
       <Router history={history}>
         <Switch>
           <Route path="/lobby/:roomID" username={this.state.username}>
-            <Lobby />
+            <Lobby socket={this.state.socket} username={this.state.username} currentPlayers={this.state.currentPlayers}/>
           </Route>
           <Route path="/">
-            <MainPage socket={this.state.socket} onUsernameChange={this.onUsernameChange} username={this.state.username}/>
+            <MainPage socket={this.state.socket} onUsernameChange={this.onUsernameChange} username={this.state.username} setPlayers={this.setPlayers}/>
           </Route>
         </Switch>
       </Router>

@@ -1,17 +1,28 @@
 import React from 'react'
 import CodeWrapper from './CodeWrapper'
+import { withRouter } from 'react-router-dom'
 
 class Lobby extends React.Component {
   constructor(props) {
     super(props)
 
     this.state = {
-      players: [props.username, null, null, null]
+      players: props.currentPlayers ? props.currentPlayers : [props.username]
     }
   }
 
   componentDidMount() {
+    const { socket } = this.props
 
+    if (!this.props.username) {
+      this.props.history.push(`/`)
+    } else {
+      socket.on("new player", user => {
+        this.setState({
+          players: [...this.state.players, user]
+        })
+      })
+    }
   }
 
   render() {
@@ -36,4 +47,4 @@ class Lobby extends React.Component {
   }
 }
 
-export default Lobby
+export default withRouter(Lobby)
