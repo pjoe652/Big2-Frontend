@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 
 function CodeWrapper() {
   const { roomID } = useParams();
-  console.log(roomID)
 
   return(
     <div className="code-wrapper">

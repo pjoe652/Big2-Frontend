@@ -13,8 +13,6 @@ class PageWrapper extends React.Component {
 
     this.state = {
       username: "",
-      roomId: "",
-      redirect: null,
       socket: null,
       currentPlayers: null
     }
