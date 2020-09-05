@@ -1,7 +1,7 @@
 import React from 'react'
-import CodeWrapper from './CodeWrapper'
 import { withRouter } from 'react-router-dom'
-import cx from 'classnames'
+import WaitingRoom from './WaitingRoom'
+import GameRoom from './GameRoom'
 
 class Lobby extends React.Component {
   constructor(props) {
@@ -9,12 +9,19 @@ class Lobby extends React.Component {
 
     this.state = {
       players: props.currentPlayers ? props.currentPlayers : [props.username],
-      error: ""
+      error: "",
+      hand: null,
+      gameStarted: false,
+      roomID: ""
     }
   }
 
   componentDidMount() {
     const { socket } = this.props
+
+    this.setState({
+      roomID: window.location.pathname.split('/')[2]
+    })
 
     if (!this.props.username) {
       this.props.history.push(`/`)
@@ -22,15 +29,23 @@ class Lobby extends React.Component {
       socket.on("new player", user => {
         console.log(user)
         this.setState({
-          roomId: window.location.pathname.split('/')[2],
           players: [...this.state.players, user]
         })
+      })
+
+      socket.on("start game", response => {
+        if (response) {
+          this.setState({
+            hand: response.hand,
+            gameStarted: true
+          })
+        }
       })
     }
   }
 
   onStartClick = () => {
-    const { players, roomId } = this.state
+    const { players } = this.state
     const { socket } = this.props
 
     if (players.length <= 1) {
@@ -42,41 +57,15 @@ class Lobby extends React.Component {
         error: ""
       })
 
-      console.log(roomId)
-      socket.emit("start game", { roomCode: roomId })
-      socket.on("start game", response => {
-        console.log(response)
-      })
+      socket.emit("start game")
     }
   }
 
   render() {
-    const { players, error } = this.state
+    const { players, error, roomID, gameStarted, hand } = this.state
 
     return(
-      <div className="lobby-container">
-        <CodeWrapper />
-        {
-          players.map(player => {
-            return (
-              <div className="user-slot">
-                <span>
-                  {`${ player ? player : "" }`}
-                </span>
-              </div>
-            )
-          })
-        }
-        <div className="start-button" onClick={this.onStartClick}>
-          Start Game
-        </div>
-        <div className={cx({
-          "error-field": true,
-          "error": error
-        })}>
-          {this.state.error}
-        </div>
-      </div>
+        gameStarted ? <GameRoom hand={hand} playerCount={players.length}/> : <WaitingRoom players={players} error={error} roomID={roomID} onStartClick={this.onStartClick}/>
     )
   }
 }
