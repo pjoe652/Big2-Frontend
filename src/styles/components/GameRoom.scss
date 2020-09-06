@@ -1,30 +1,95 @@
 .game-room-container {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 
-  .open-view-container {
+  .opponent-field-container {
+    height: 50vh;
     width: 100%;
-    height: calc(100vh - 310px);
-  }
 
-  .layout {
-    height: 10rem;
-    width: 100%;
-  }
+    .opponent-slider {
+      display: flex;
+      flex-direction: row;
+      height: 65%;
+      justify-content: center;
 
-  .card {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+      .user-container {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 10rem;
+        height: 10rem;
+        // opacity: 0;
+        transform: translateX(calc(var(--order) * 1000px));
+        transition: transform 0.3s;
 
-    &.selected {
-      opacity: 0.5;
+        &.active {
+          opacity: 1;
+        }
+
+        &.hidden {
+          opacity: 0;
+        }
+
+        .user-img {
+          height: 100%;
+        }
+      }
     }
+
   }
 
-  .hand {
-    .card {
-      width: 5rem;
+  .player-field-container {
+    height: 50vh;
+    width: 100%;
+
+    .playing-hand-container {
+      display: flex;
+      align-self: center;
+      align-items: center;
+      justify-content: center;
+      min-height: 35%;
+      transform: translateX(calc(1.6rem * (var(--total-cards))));
+
+        .card {
+          width: var(--width);
+          height: 100%;
+          border: solid 1px black;
+          border-radius: 0.25rem;
+          transform: translateX(calc(-4rem * var(--card-num)));
+  
+          &:hover {
+            transform: translate(calc(-4rem * var(--card-num)), -0.8rem);
+          }
+        }
+    }
+  
+    .layout {
+      display: flex;
+      text-align: center;
+      padding-top: 1rem;
+  
+      .card-container {
+        height: 100% !important;
+  
+        &.hidden {
+          pointer-events: none;
+        }
+      }
+  
+      .card {
+        width: 100%;
+        pointer-events: none;
+        border-radius: 0.25rem;
+        border: solid 1px black;
+    
+        &.hidden {
+          opacity: 0.3;
+          pointer-events: none;
+        }
+      }
     }
   }
 }

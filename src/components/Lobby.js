@@ -27,7 +27,6 @@ class Lobby extends React.Component {
       this.props.history.push(`/`)
     } else {
       socket.on("new player", user => {
-        console.log(user)
         this.setState({
           players: [...this.state.players, user]
         })
@@ -63,9 +62,9 @@ class Lobby extends React.Component {
 
   render() {
     const { players, error, roomID, gameStarted, hand } = this.state
-
+    
     return(
-        gameStarted ? <GameRoom hand={hand} playerCount={players.length}/> : <WaitingRoom players={players} error={error} roomID={roomID} onStartClick={this.onStartClick}/>
+        gameStarted ? <GameRoom hand={hand} players={players}/> : <WaitingRoom players={players} error={error} roomID={roomID} onStartClick={this.onStartClick}/>
     )
   }
 }
