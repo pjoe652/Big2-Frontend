@@ -1,9 +1,10 @@
 import cx from 'classnames';
 import React from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
 import { numberValue, suitValue } from '../utils/cardValue';
-const ResponsiveReactGridLayout = WidthProvider(Responsive);
+import { evaluateHand } from '../utils/gameLogic';
+import Draggable from 'react-draggable';
 
+import { DesktopLg, Desktop, TabletLand, Tablet, Phone, PhoneSm } from '../constants/screenWidth'
 
 class GameRoom extends React.Component {
   constructor(props) {
@@ -11,11 +12,14 @@ class GameRoom extends React.Component {
 
     this.state = {
       selected: [],
-      cardsPerColumn: 52/(props.players.length * 2),
+      cardsPerRow: 13,
       hand: this.props.hand,
       cardWidth: 0,
       carouselPlayers: [...props.players],
-      carouselActive: 0
+      carouselActive: 0,
+      displayHand: [],
+      cardStart: false,
+      previousHand: []
     }
   }
 
@@ -39,8 +43,52 @@ class GameRoom extends React.Component {
 
     valueHand.sort((a, b) => (a.value > b.value) ? 1 : -1)
 
+    this.updateHandRow()
+
     this.setState({
       hand: valueHand
+    })
+
+    window.addEventListener('resize', this.updateHandRow)
+  }
+
+  componentWillMount() {
+    window.removeEventListener('resize', this.updateHandRow)
+  }
+
+  updateHandRow = () => {
+    const { hand } = this.state
+
+    let itemsPerRow = 13
+    let tempColumnItems = []
+    let tempArray = []
+
+    if (window.innerWidth < Tablet) {
+      itemsPerRow = 5
+    } else if (window.innerWidth < TabletLand) {
+      itemsPerRow = 8
+    }
+
+    hand.forEach(card => {
+      card.empty = false
+      tempArray.push(card)
+      if (tempArray.length === itemsPerRow) {
+        tempColumnItems.push(tempArray)
+        tempArray = []
+      }
+    })
+
+    while (tempArray.length < itemsPerRow && tempArray.length !== 0) {
+      tempArray.push({empty: true})
+    }
+
+    tempColumnItems.push(tempArray)
+
+    this.setState({
+      displayHand: tempColumnItems,
+      cardsPerRow: itemsPerRow
+    }, () => {
+      this.updateCardWidth()
     })
   }
 
@@ -71,16 +119,17 @@ class GameRoom extends React.Component {
     }
   }
 
-  dropCard = (a, card,c,d,event) => {
+  dropCard = (event, data) => {
     const { hand, selected } = this.state
 
     if(event.target.id) {
-      const cardContainerTop = document.getElementsByClassName("react-grid-layout")[0].offsetTop
+      const dropzoneLowerBound = document.getElementsByClassName("dropzone-container")[0].offsetHeight + document.body.scrollTop
 
-      if(event.pageY < cardContainerTop && selected.length < 5) {
-        const number = card.i.split("-")[0]
-        const suit = card.i.split("-")[1]
+      if(((event.pageY && event.pageY < dropzoneLowerBound) || (event.changedTouches && event.changedTouches[0].pageY && event.changedTouches[0].pageY < dropzoneLowerBound)) && selected.length < 5) {
+        const number = event.target.id.split("-")[0]
+        const suit = event.target.id.split("-")[1]
         const selectedCard = hand.filter(card => card.suit === suit && card.number === number)[0]
+
         hand.forEach(card => {
           if (card.suit === suit && card.number === number) {
             card.hidden = true
@@ -92,45 +141,94 @@ class GameRoom extends React.Component {
         this.setState({
           hand: hand,
           selected: selected,
-          cardWidth: document.getElementById(event.target.id).clientWidth
+          cardStart: false
         })
       } else {
         console.log("Max number of cards is 5")
       }
     }
+
+    this.setState({
+      cardStart: false
+    })
+  }
+
+  playHand = () => {
+    const { selected, previousHand } = this.state;
+    console.log(evaluateHand(selected, previousHand))
+  }
+
+  updateCardWidth = () => {
+    const { hand, cardsPerRow } = this.state
+
+    const tempWidth = window.innerWidth/(cardsPerRow * 1.2)
+
+    this.setState({
+      cardWidth: tempWidth
+    })
   }
 
   nextOpponent = () => {
     let { carouselActive, carouselPlayers } = this.state
 
+    if (carouselActive === carouselPlayers.length - 1) {
+      carouselActive = 0
+    } else {
+      carouselActive++
+    }
+
     this.setState({
-      carouselActive: ++carouselActive
+      carouselActive: carouselActive
+    })
+  }
+
+  clearHand = () => {
+    let { displayHand } = this.state;
+
+    displayHand.forEach(row => {
+      row.forEach(card => {
+        card.hidden = false
+      })
     })
 
+    this.setState({
+      displayHand: displayHand,
+      selected: []
+    })
+  }
+
+  handleStart = () => {
+    this.setState({
+      cardStart: true,
+    })
   }
 
   stopDrag = (e) => {
     e.preventDefault()
+    return null
   }
 
   render() {
-    const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive } = this.state
+    const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive, displayHand, cardsPerRow, cardStart } = this.state
     const { players } = this.props
-
-    console.log(carouselActive)
 
     return(
       <div className="game-room-container">
+        <div className={cx({"dropzone-container": true, "hidden": !cardStart})}>
+          <div className="dropzone-block"/>
+          <div className="dropzone-fade"/>
+        </div>
         <div className="opponent-field-container">
           <div className="opponent-slider">
             {
               carouselPlayers.map((player, i) => {
                 return(
                   <div className={cx({
-                    "active": (i - 3 + carouselActive === 0),
-                    "hidden": (i - 3 + carouselActive === 3),
+                    "active": carouselActive === i,
+                    "hidden": carouselActive > i || (carouselActive === 0 && i === carouselPlayers.length - 1),
+                    "first-player": carouselActive > 1 && i === 0,
                     "user-container": true
-                    })} id={i} style={{"--order": (i - 3 + carouselActive) < 3 ? (i - 3 + carouselActive) : -1}}
+                    })} id={i} 
                   >
                     <img className="user-img" src="/user.png" alt="" />
                     <div className="user-name">
@@ -148,31 +246,69 @@ class GameRoom extends React.Component {
 
           </div>
         </div>
+        <div className="clear-hand-button" onClick={this.clearHand}>
+          <span>Clear Hand</span>
+        </div>
         <div className="player-field-container">
-          <div className="playing-hand-container" style={{'--total-cards': selected.length}}>
+          <div className={cx({
+            "playing-hand-container": true
+          })} style={{'--total-cards': selected.length}}>
+            <div className={cx({
+              "overlay": true,
+              "skip": selected.length === 0,
+              "play": selected.length !== 0
+            })} />
+            <div className={cx({
+              "overlay-header": true,
+              "skip": selected.length === 0,
+              "play": selected.length !== 0
+            })} onClick={this.playHand}>
+              {
+                selected.length === 0 ? "Skip" : "Play"
+              }
+            </div>
             {
               selected.map((card, i) => {
                 return(
-                  <img key={`img-${i}`} className="card" src={`${process.env.PUBLIC_URL}/cards/${card.number}${card.suit}.svg`} style={{'--card-num': i, '--width': `${cardWidth}px`}} alt=""></img>
+                  <img key={`img-${i}`} className="card" src={`${process.env.PUBLIC_URL}/cards/${card.number}${card.suit}.svg`} style={{"--card-width": `${cardWidth}px`}} alt=""></img>
                 )
               })
             }
           </div>
-          <ResponsiveReactGridLayout className="layout" breakpoints={{lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0}} cols={{lg: cardsPerColumn, md: 10, sm: 6, xs: 4, xxs: 2}} preventCollision rowHeight={100} isResizable={false} onDragStop={(a,b,c,d,event) => this.dropCard(a,b,c,d,event)} containerPadding={[192, 0]}>
+          <div className="current-hand-container">
             {
-              hand.map((card, i) => {
-                const dataGrid = {x: (i) % cardsPerColumn, y: Math.floor((i) / cardsPerColumn), w: 1, h: 1}
+              displayHand.map(row => {
                 return(
-                  <div className={cx({"card-container": true, "hidden": card.hidden})} id={`${card.number}-${card.suit}`} key={`${card.number}-${card.suit}`} data-grid={dataGrid} onDragStart={card.hidden ? this.stopDrag : null} >
-                    <img key={`img-${i}`} className={cx({
-                      "card": true,
-                      "hidden": card.hidden
-                    })} src={`${process.env.PUBLIC_URL}/cards/${card.number}${card.suit}.svg`} alt=""></img>
+                  <div className="hand-row">
+                    {
+                      row.map((card, i) => {
+                        return(
+                          !card.empty ? 
+                          <Draggable position={{x: 0, y: 0}} onStart={card.hidden || selected.length > 4 ? null : this.handleStart} onStop={selected.length > 4 ? null : this.dropCard} defaultPosition={{x: 0, y: 0}}>
+                            <img key={`img-${i}`} id={`${card.number}-${card.suit}`} className={cx({
+                              "card": true,
+                              "hidden": card.hidden,
+                              "empty": card.empty
+                            })} src={`${process.env.PUBLIC_URL}/cards/${card.number}${card.suit}.svg`} alt="" 
+                              style={{'--cards-per-row': cardsPerRow}}
+                            />
+                          </Draggable>
+                          : 
+                          <img key={`img-${i}`} id={`${card.number}-${card.suit}`} className={cx({
+                            // "card": true,
+                            // "hidden": card.hidden,
+                            // "empty": card.empty
+                          })} src="" alt="" 
+                            style={{'--cards-per-row': cardsPerRow}}
+                          />
+                        )
+                      })
+                    }
                   </div>
                 )
               })
             }
-          </ResponsiveReactGridLayout>
+          </div>
         </div>
       </div>
     )

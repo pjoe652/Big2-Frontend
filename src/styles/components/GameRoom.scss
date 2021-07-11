@@ -3,6 +3,30 @@
   display: flex;
   flex-direction: column;
 
+  .dropzone-container {
+    height: 66vh;
+    width: 100%;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+
+    opacity: 0.5;
+    transition: all 0.5s;
+
+    .dropzone-block {
+      height: 66vh;
+      width: 100%;
+      background: #9cff88;
+      outline: dashed 1rem rgb(0, 0, 0);
+    }
+
+    &.hidden {
+      transition: all 0s;
+      opacity: 0;
+      z-index: -100;
+    }
+  }
+
   .opponent-field-container {
     height: 50vh;
     width: 100%;
@@ -21,16 +45,27 @@
         align-items: center;
         width: 10rem;
         height: 10rem;
-        // opacity: 0;
-        transform: translateX(calc(var(--order) * 1000px));
-        transition: transform 0.3s;
+        opacity: 0;
+        transform: translateX(-1500px);
+        transition: all 0.3s;
 
         &.active {
           opacity: 1;
+          transform: translateX(0);
         }
 
         &.hidden {
           opacity: 0;
+          transform: translateX(1500px);
+        }
+
+        &.final-swap {
+          transform: translateX(1500px);
+        }
+
+        &.first-player {
+          transform: translateX(-3000px);
+          transition: none;
         }
 
         .user-img {
@@ -38,7 +73,21 @@
         }
       }
     }
+  }
 
+  .clear-hand-button {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+    font-size: 2rem;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      color:red;
+      background-color: rgba(200, 200, 200, 0.5);
+      transition: all 0.3s;
+    }
   }
 
   .player-field-container {
@@ -46,48 +95,130 @@
     width: 100%;
 
     .playing-hand-container {
+      user-select: none;
+      cursor: pointer;
       display: flex;
       align-self: center;
       align-items: center;
       justify-content: center;
       min-height: 35%;
-      transform: translateX(calc(1.6rem * (var(--total-cards))));
+      padding: 1rem 0;
 
-        .card {
-          width: var(--width);
-          height: 100%;
-          border: solid 1px black;
-          border-radius: 0.25rem;
-          transform: translateX(calc(-4rem * var(--card-num)));
+      .overlay-header {
+        position: absolute;
+        height: 17.5%;
+        width: 100%;
+        padding: 1rem 0;
+        opacity: 0;
+        transition: all 0.3s;
+        justify-content: center;
+        text-align: center;
+        font-size: 5rem;
+        font-weight: bold;
+        line-height: 200%;
+      }
+
+      @media screen and (min-width: $tablet-land){
+        &:hover {
+          .overlay {
+            z-index: 5;
+            opacity: 0.2;
   
-          &:hover {
-            transform: translate(calc(-4rem * var(--card-num)), -0.8rem);
+            &.skip {
+              background-color: #ff8888;
+            }
+    
+            &.play {
+              background-color: #9cff88;
+            }
+          }
+  
+          .overlay-header {
+            z-index: 6;
+            opacity: 1;
+  
+            &.skip {
+              color: #ff0000;
+            }
+    
+            &.play {
+              color: #2bff00;
+            }
           }
         }
+      }
+
+      .overlay {
+        position: absolute;
+        min-height: 17.5%;
+        width: 100%;
+        padding: 1rem 0;
+        background-color: white;
+        opacity: 0;
+        transition: all 0.3s;
+      }
+
+      .card {
+        // height: 15rem;
+        width: var(--card-width);
+        border: solid 1px black;
+        border-radius: 0.25rem;
+        margin: 0 0.25rem;
+
+        @media screen and (max-width: $tablet-land){
+          // height: 10rem;
+        }
+
+        @media screen and (max-width: $tablet){
+          // height: 6rem;
+        }
+
+        &:hover {
+
+          @media screen and (max-width: $tablet){
+          }
+        }
+      }
     }
   
-    .layout {
+    .current-hand-container {
+      width: 100%;
       display: flex;
       text-align: center;
       padding-top: 1rem;
-  
-      .card-container {
-        height: 100% !important;
-  
-        &.hidden {
-          pointer-events: none;
-        }
-      }
-  
-      .card {
+      flex-direction: column;
+
+      .hand-row {
+        display: flex;
+        flex-direction: row;
         width: 100%;
-        pointer-events: none;
-        border-radius: 0.25rem;
-        border: solid 1px black;
-    
-        &.hidden {
-          opacity: 0.3;
-          pointer-events: none;
+        justify-content: center;
+
+        .card {
+          -webkit-user-drag: none;
+          -khtml-user-drag: none;
+          -moz-user-drag: none;
+          -o-user-drag: none;
+          user-drag: none;
+          width: calc(100% / (var(--cards-per-row) * 1.2));
+          border: solid 1px black;
+          border-radius: 0.25rem;
+          margin: 0.25rem;
+  
+          &.hidden {
+            opacity: 0.5;
+            pointer-events: none;
+            user-select: none;
+            transform: translate(0, 0) !important;
+          }
+
+          &.empty {
+            border-color: white;
+          }
+
+          &.react-draggable-dragging {
+            z-index: 100;
+          }
         }
       }
     }

@@ -47,7 +47,7 @@ class PageWrapper extends React.Component {
             <Lobby socket={this.state.socket} username={this.state.username} currentPlayers={this.state.currentPlayers}/>
           </Route>'
           <Route path="/testRoom">
-            <GameRoom hand={testHand} players={["Me", "Opponent 1"]}/>
+            <GameRoom hand={testHand} players={["Me", "Opponent 1", "two", "three"]}/>
           </Route>
           <Route path="/">
             <MainPage socket={this.state.socket} onUsernameChange={this.onUsernameChange} username={this.state.username} setPlayers={this.setPlayers}/>

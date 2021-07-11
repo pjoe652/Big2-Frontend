@@ -1,11 +1,16 @@
+@import 'breakpoints.scss';
+
 @import 'components/MainPage.scss';
 @import 'components/Lobby.scss';
 @import 'components/WaitingRoom.scss';
 @import 'components/GameRoom.scss';
 @import 'gridLayout.scss';
 
-body {
+html, body {
   font-family: Quicksand;
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  // position: fixed;
+  width: 100%;
+  // overflow: hidden;
 }
