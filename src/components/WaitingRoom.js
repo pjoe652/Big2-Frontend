@@ -1,38 +1,38 @@
 import React from 'react'
 import cx from 'classnames'
+import { useSelector } from 'react-redux'
 
-class WaitingRoom extends React.Component {
-  render() {
-    const { players, error, roomID, onStartClick } = this.props
+export default function WaitingRoom(props) {
+  const { error, onStartClick } = props
 
-    return(
-      <div className="waiting-room-container">
-        <div className="code-wrapper">
-          {`Code: ${roomID}`}
-        </div>
-        {
-          players.map(player => {
-            return (
-              <div className="user-slot">
-                <span>
-                  {`${ player ? player : "" }`}
-                </span>
-              </div>
-            )
-          })
-        }
-        <div className="start-button" onClick={onStartClick}>
-          Start Game
-        </div>
-        <div className={cx({
-          "error-field": true,
-          "error": error
-        })}>
-          {error}
-        </div>
+  const currentPlayers = useSelector(state => state.game.currentPlayers)
+  const roomID = useSelector(state => state.game.roomID)
+
+  return(
+    <div className="waiting-room-container">
+      <div className="code-wrapper">
+        {`Code: ${roomID}`}
       </div>
-    )
-  }
+      {
+        currentPlayers.map(player => {
+          return (
+            <div className="user-slot">
+              <span>
+                {`${ player ? player : "" }`}
+              </span>
+            </div>
+          )
+        })
+      }
+      <div className="start-button" onClick={onStartClick}>
+        Start Game
+      </div>
+      <div className={cx({
+        "error-field": true,
+        "error": error
+      })}>
+        {error}
+      </div>
+    </div>
+  )
 }
-
-export default WaitingRoom

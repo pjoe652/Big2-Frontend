@@ -1,72 +1,62 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { withRouter } from 'react-router-dom'
 import WaitingRoom from './WaitingRoom'
 import GameRoom from './GameRoom'
+import history from '../utils/history';
+import { useDispatch, useSelector } from 'react-redux';
 
-class Lobby extends React.Component {
-  constructor(props) {
-    super(props)
+function Lobby(props) {
+  // const { socket, username, history } = props
 
-    this.state = {
-      players: props.currentPlayers ? props.currentPlayers : [props.username],
-      error: "",
-      hand: null,
-      gameStarted: false,
-      roomID: ""
+  const [error, setError] = useState("")
+  const [hand, setHand] = useState(null)
+  const [gameStarted, setGameStarted] = useState(false)
+
+  const socket = useSelector(state => state.game.socket)
+  const username = useSelector(state => state.game.username)
+  const currentPlayers = useSelector(state => state.game.currentPlayers)
+  const dispatch = useDispatch()
+
+  console.log(socket, username, currentPlayers)
+
+  useEffect(() => {
+    console.log("username ", username)
+    if (!username) {
+      // history.push(`/`)
+      // history.go(0)
+    } else {
+      setGameSockets()
     }
-  }
+  }, [])
 
-  componentDidMount() {
-    const { socket } = this.props
-
-    this.setState({
-      roomID: window.location.pathname.split('/')[2]
+  function setGameSockets() {
+    socket.on("new player", user => {
+      dispatch(user)
     })
 
-    if (!this.props.username) {
-      this.props.history.push(`/`)
-    } else {
-      socket.on("new player", user => {
-        this.setState({
-          players: [...this.state.players, user]
-        })
-      })
-
-      socket.on("start game", response => {
-        if (response) {
-          this.setState({
-            hand: response.hand,
-            gameStarted: true
-          })
-        }
-      })
-    }
+    socket.on("start game", response => {
+      if (response) {
+        setHand(response.hand)
+        setGameStarted(true)
+      }
+    })
   }
 
-  onStartClick = () => {
-    const { players } = this.state
-    const { socket } = this.props
-
-    if (players.length <= 1) {
-      this.setState({
-        error: "You must have more than one player"
-      })
+  function onStartClick() {
+    if (currentPlayers.length <= 1) {
+      setError("You must have more than one player")
     } else {
-      this.setState({
-        error: ""
-      })
-
+      setError("")
       socket.emit("start game")
     }
   }
-
-  render() {
-    const { players, error, roomID, gameStarted, hand } = this.state
-    
-    return(
-        gameStarted ? <GameRoom hand={hand} players={players}/> : <WaitingRoom players={players} error={error} roomID={roomID} onStartClick={this.onStartClick}/>
-    )
-  }
+  
+  return(
+      // gameStarted ? 
+      //   <GameRoom socket={socket} hand={hand} players={players} username={username} code={roomID}/> 
+      //   : 
+        <WaitingRoom error={error} onStartClick={onStartClick}/>
+  )
 }
 
 export default withRouter(Lobby)

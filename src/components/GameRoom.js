@@ -1,10 +1,11 @@
 import cx from 'classnames';
 import React from 'react';
-import { numberValue, suitValue } from '../utils/cardValue';
+import { numberValue, suitValue, addCardValue } from '../utils/cardValue';
 import { evaluateHand } from '../utils/gameLogic';
 import Draggable from 'react-draggable';
 
 import { DesktopLg, Desktop, TabletLand, Tablet, Phone, PhoneSm } from '../constants/screenWidth'
+import socket from 'socket.io-client/lib/socket';
 
 class GameRoom extends React.Component {
   constructor(props) {
@@ -19,13 +20,27 @@ class GameRoom extends React.Component {
       carouselActive: 0,
       displayHand: [],
       cardStart: false,
-      previousHand: []
+      previousHand: [],
+      handToBeat: null
     }
   }
 
   componentDidMount = () => {
     const { carouselPlayers } = this.state
+    const { socket, testing } = this.props
     const valueHand = this.state.hand
+
+    if (!testing) {
+      socket.on("hand played", response => {
+        if (response) {
+          console.log(response)
+          this.setState({
+            handToBeat: response.hand
+          })
+          this.nextOpponent()
+        }
+      })
+    }
 
     valueHand.forEach(card => {
       card.value = numberValue[card.number] * 4 + suitValue[card.suit]
@@ -123,7 +138,9 @@ class GameRoom extends React.Component {
     const { hand, selected } = this.state
 
     if(event.target.id) {
-      const dropzoneLowerBound = document.getElementsByClassName("dropzone-container")[0].offsetHeight + document.body.scrollTop
+      // const dropzoneLowerBound = document.getElementsByClassName("dropzone-container")[0].offsetHeight + document.body.scrollTop
+      const dropzoneLowerBound = window.innerHeight * 0.66 + window.scrollY;
+      console.log(dropzoneLowerBound)
 
       if(((event.pageY && event.pageY < dropzoneLowerBound) || (event.changedTouches && event.changedTouches[0].pageY && event.changedTouches[0].pageY < dropzoneLowerBound)) && selected.length < 5) {
         const number = event.target.id.split("-")[0]
@@ -155,7 +172,15 @@ class GameRoom extends React.Component {
 
   playHand = () => {
     const { selected, previousHand } = this.state;
-    console.log(evaluateHand(selected, previousHand))
+    const { code, username, socket } = this.props;
+    const evaluatedHand = evaluateHand(selected, previousHand)
+    
+    if (evaluatedHand) {
+      console.log(evaluatedHand)
+      socket.emit("play hand", { hand: evaluatedHand, name: username, code: code })
+    } else {
+      console.log("invalid hand")
+    }
   }
 
   updateCardWidth = () => {
@@ -209,7 +234,7 @@ class GameRoom extends React.Component {
   }
 
   render() {
-    const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive, displayHand, cardsPerRow, cardStart } = this.state
+    const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive, displayHand, cardsPerRow, cardStart, handToBeat } = this.state
     const { players } = this.props
 
     return(
@@ -239,11 +264,15 @@ class GameRoom extends React.Component {
               })
             }
           </div>
-          <div onClick={this.nextOpponent}>
-            tempCycle
-          </div>
           <div className="previous-hand-container">
-
+            {
+              handToBeat ? handToBeat.cardPool.map((card, i) => {
+                return(
+                  <img key={`img-${i}-played`} className="card" src={`${process.env.PUBLIC_URL}/cards/${addCardValue(card.value)}${card.suit}.svg`} style={{"--card-width": `${cardWidth}px`}} alt=""></img>
+                )
+              })
+              : <React.Fragment />
+            }
           </div>
         </div>
         <div className="clear-hand-button" onClick={this.clearHand}>

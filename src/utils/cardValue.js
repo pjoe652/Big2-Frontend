@@ -7,10 +7,10 @@ const numberValue = {
   "8": 5,
   "9": 6,
   "10": 7,
-  "J": 8,
-  "Q": 9,
-  "K": 10,
-  "A": 11,
+  "j": 8,
+  "q": 9,
+  "k": 10,
+  "a": 11,
   "2": 12
 }
 
@@ -21,4 +21,8 @@ const suitValue = {
   "S": 4
 }
 
-export { numberValue, suitValue}
+const addCardValue = (currentCard) => {
+  return numberValue[currentCard] + 1 > 12 ? "3" : Object.keys(numberValue)[numberValue[currentCard] + 1];
+}
+
+export { numberValue, suitValue, addCardValue }

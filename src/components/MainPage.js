@@ -1,125 +1,92 @@
-import React from 'react'
+import React, { useState } from 'react'
 import cx from 'classnames'
 import { withRouter } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { addPlayers, setGameRoomID, setUsername } from '../store/actions/game'
 
-class MainPage extends React.Component {
-  constructor(props) {
-    super(props)
+function MainPage() {
+  const [username, setLocalUsername] = useState("")
+  const [roomID, setRoomID] = useState("")
+  const [errored, setErrored] = useState(false)
+  const [roomIdModal, setRoomIdModal] = useState(false)
+  const socket = useSelector(state => state.game.socket)
+  const dispatch = useDispatch()
 
-    this.state = {
-      roomId: "",
-      username: "",
-      errored: false,
-      roomIdModal: false
-    }
-  }
-
-  onRoomIdChange = (e) => {
-    this.setState({
-      roomId: e.target.value
-    })
-  }
-
-  openModal = () => {
-    if(!this.props.username) {
-      this.setState({
-        errored: true
-      })
+  function openModal() {
+    if(!username) {
+      setErrored(true)
     } else {
-      this.setState({
-        roomIdModal: true
-      })
+      setRoomIdModal(true)
     }
   }
 
-  closeModal = () => {
-    this.setState({
-      roomIdModal: false
-    })
+  function closeModal() {
+    setRoomIdModal(false)
   }
 
-  resetError = () => {
-    this.setState({
-      errored: false
-    })
+  function resetError() {
+    setErrored(false)
   }
 
-  missingUsername = () => {
-    this.setState({
-      errored: true
-    })
+  function missingUsername() {
+    setErrored(true)
   }
 
-  joinRoom = () => {
-    const { roomId } = this.state
-    const { socket, username } = this.props
-
-    socket.on("join room", response => {
-      if(response.status === "Ok") {
-        console.log(response)
-        this.props.setPlayers(response.name)
-        this.props.history.push(`/lobby/${roomId}`)
-      }
-    })
-    socket.emit("join room", { name: username, code: roomId })
+  function joinRoom() {
+    socket.emit("join room", { name: username, code: roomID })
   }
 
-  createRoom = () => {
-    const { socket, username } = this.props
-
-    socket.on("create room", response => {
-      if(response) {
-        this.setState({
-          roomId: response
-        })
-        this.props.history.push(`/lobby/${this.state.roomId}`)
-      }
-    })
+  function createRoom() {
+    dispatch(setUsername(username))
     socket.emit("create room", username)
   }
 
-  render() {
-    const { roomIdModal } = this.state
-    const { username } = this.props
+  function onUsernameChange(e) {
+    dispatch(setUsername(username))
+    setLocalUsername(e.target.value)
+  }
 
-    return(
-      <div className="main-page-container">
-        <div className={cx({
-          "modal-wrapper": true,
-          "hidden": !roomIdModal
-        })}>
-          <div className="modal-container" onClick={this.closeModal}/>
-          <div className="modal-box">
-            <span className="header">
-              Enter Room Id
-            </span>
-            <input className="namefield button" type="text" placeholder="Room Id" onChange={this.onRoomIdChange} />
-            <div className="button" onClick={this.joinRoom}>
-              Enter Room
-            </div>
+  function onRoomIDChange(e) {
+    setRoomID(e.target.value)
+  }
+
+  return(
+    <div className="main-page-container">
+      <div className={cx({
+        "modal-wrapper": true,
+        "hidden": !roomIdModal
+      })}>
+        <div className="modal-container" onClick={closeModal}/>
+        <div className="modal-box">
+          <span className="header">
+            Enter Room Id
+          </span>
+          <input className="namefield button" type="text" placeholder="Room Id" onChange={onRoomIDChange} />
+          <div className="button" onClick={joinRoom}>
+            Enter Room
           </div>
         </div>
-        <div className="header">
-          Big2.io
-        </div>
-        <input className={cx({
-            "namefield button": true,
-            "errored": this.state.errored
-          })} 
-          type="text" 
-          placeholder="Your name" 
-          onChange={this.props.onUsernameChange}
-          onAnimationEnd={this.resetError}
-        />
-        <div className="host button" onClick={ username ? this.createRoom : this.missingUsername }>
-          Host a game
-        </div>
-        <div className="join button" onClick={ username ? this.openModal : this.missingUsername}>
-          Join a game
-        </div>
       </div>
-    )
-  }
+      <div className="header">
+        Big2.io
+      </div>
+      <input className={cx({
+          "namefield button": true,
+          "errored": errored
+        })} 
+        type="text" 
+        placeholder="Your name" 
+        onChange={onUsernameChange}
+        onAnimationEnd={resetError}
+      />
+      <div className="host button" onClick={ username ? createRoom : missingUsername }>
+        Host a game
+      </div>
+      <div className="join button" onClick={ username ? openModal : missingUsername}>
+        Join a game
+      </div>
+    </div>
+  )
 }
 
 export default withRouter(MainPage)

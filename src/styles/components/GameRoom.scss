@@ -2,6 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 
   .dropzone-container {
     height: 66vh;
@@ -9,7 +10,7 @@
     position: fixed;
     display: flex;
     flex-direction: column;
-
+    z-index: 100;
     opacity: 0.5;
     transition: all 0.5s;
 
@@ -91,7 +92,7 @@
   }
 
   .player-field-container {
-    height: 50vh;
+    // height: 50vh;
     width: 100%;
 
     .playing-hand-container {
@@ -103,6 +104,7 @@
       justify-content: center;
       min-height: 35%;
       padding: 1rem 0;
+      height: 10rem;
 
       .overlay-header {
         position: absolute;
