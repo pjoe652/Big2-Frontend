@@ -1,45 +1,66 @@
 import cx from 'classnames';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { numberValue, suitValue, addCardValue } from '../utils/cardValue';
 import { evaluateHand } from '../utils/gameLogic';
 import Draggable from 'react-draggable';
 
 import { DesktopLg, Desktop, TabletLand, Tablet, Phone, PhoneSm } from '../constants/screenWidth'
 import socket from 'socket.io-client/lib/socket';
+import { useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 
-class GameRoom extends React.Component {
-  constructor(props) {
-    super(props)
+function GameRoom(props) {
+  // constructor(props) {
+  //   super(props)
 
-    this.state = {
-      selected: [],
-      cardsPerRow: 13,
-      hand: this.props.hand,
-      cardWidth: 0,
-      carouselPlayers: [...props.players],
-      carouselActive: 0,
-      displayHand: [],
-      cardStart: false,
-      previousHand: [],
-      handToBeat: null
-    }
-  }
+  //   this.state = {
+  //     selected: [],
+  //     cardsPerRow: 13,
+  //     hand: this.props.hand,
+  //     cardWidth: 0,
+  //     carouselPlayers: [...props.players],
+  //     carouselActive: 0,
+  //     displayHand: [],
+  //     cardStart: false,
+  //     previousHand: [],
+  //     handToBeat: null
+  //   }
+  // }
 
-  componentDidMount = () => {
-    const { carouselPlayers } = this.state
-    const { socket, testing } = this.props
-    const valueHand = this.state.hand
+  const [selected, setSelected] = useState([])
+  const [cardsPerRow, setCardsPerRow] = useState(13)
+  const [hand, setHand] = useState(props.hand)
+  const [cardWidth, setCardWidth] = useState(0)
+  const [carouselActive, setCarouselActive] = useState(0)
+  const [displayHand, setDisplayHand] = useState([])
+  const [cardStart, setCardStart] = useState(false)
+  const [previousHand, setPreviousHand] = useState([])
+  const [handToBeat, setHandToBeat] = useState(null)
 
-    if (!testing) {
+  const carouselPlayers = useSelector(state => state.game.currentPlayers)
+  const socket = useSelector(state => state.game.socket)
+  const username = useSelector(state => state.game.username)
+  const code = useSelector(state => state.game.roomID)
+  const location = useLocation()
+
+  useEffect(() => {
+    const { testing } = props
+    const valueHand = hand
+
+    console.log(location)
+    if (location.pathname !== "/testRoom") {
       socket.on("hand played", response => {
         if (response) {
           console.log(response)
+          setHandToBeat(response.hand)
           this.setState({
             handToBeat: response.hand
           })
-          this.nextOpponent()
+          nextOpponent()
         }
       })
+    } else {
+      
     }
 
     valueHand.forEach(card => {
@@ -47,32 +68,19 @@ class GameRoom extends React.Component {
       card.hidden = false
     })
 
-    if(carouselPlayers.length === 2) {
-      carouselPlayers.forEach(player => {
-        carouselPlayers.push(player)
-      })
-      this.setState({
-        carouselPlayers: carouselPlayers
-      })
-    }
-
     valueHand.sort((a, b) => (a.value > b.value) ? 1 : -1)
 
-    this.updateHandRow()
+    updateHandRow()
 
-    this.setState({
-      hand: valueHand
-    })
+    setHand(valueHand)
 
-    window.addEventListener('resize', this.updateHandRow)
-  }
+    window.addEventListener('resize', updateHandRow)
 
-  componentWillMount() {
-    window.removeEventListener('resize', this.updateHandRow)
-  }
+    return () => window.removeEventListener('resize', updateHandRow)
+  })
 
-  updateHandRow = () => {
-    const { hand } = this.state
+  function updateHandRow() {
+    const tempHand = hand;
 
     let itemsPerRow = 13
     let tempColumnItems = []
@@ -84,7 +92,7 @@ class GameRoom extends React.Component {
       itemsPerRow = 8
     }
 
-    hand.forEach(card => {
+    tempHand.forEach(card => {
       card.empty = false
       tempArray.push(card)
       if (tempArray.length === itemsPerRow) {
@@ -99,80 +107,65 @@ class GameRoom extends React.Component {
 
     tempColumnItems.push(tempArray)
 
-    this.setState({
-      displayHand: tempColumnItems,
-      cardsPerRow: itemsPerRow
-    }, () => {
-      this.updateCardWidth()
-    })
+    setHand(tempHand)
+    setDisplayHand(tempColumnItems)
+    setCardsPerRow(itemsPerRow)
+    updateCardWidth()
+    sortHand()
   }
 
-  sortHand = () => {
-    const sortedHand = this.state.hand
+  function sortHand() {
+    const sortedHand = hand
 
     sortedHand.sort((a, b) => (a.value > b.value) ? 1 : -1)
 
-    this.setState({
-      hand: sortedHand
-    })
+    setHand(sortedHand)
   }
 
-  onCardClick = (card) => {
-    const { selected } = this.state
-
+  function onCardClick(card) {
+    const tempSelected = selected
     if(selected.includes(card)) {
       const filteredSelected = selected.filter(existingCards => existingCards !== card)
 
-      this.setState({
-        selected: filteredSelected
-      })
+      setSelected(filteredSelected)
     } else {
-      selected.push(card)
-      this.setState({
-        selected: selected
-      })
+      tempSelected.push(card)
+      setSelected(tempSelected)
     }
   }
 
-  dropCard = (event, data) => {
-    const { hand, selected } = this.state
+  function dropCard(event, data) {
+    const tempHand = hand
+    const tempSelected = selected
 
     if(event.target.id) {
-      // const dropzoneLowerBound = document.getElementsByClassName("dropzone-container")[0].offsetHeight + document.body.scrollTop
       const dropzoneLowerBound = window.innerHeight * 0.66 + window.scrollY;
-      console.log(dropzoneLowerBound)
 
       if(((event.pageY && event.pageY < dropzoneLowerBound) || (event.changedTouches && event.changedTouches[0].pageY && event.changedTouches[0].pageY < dropzoneLowerBound)) && selected.length < 5) {
         const number = event.target.id.split("-")[0]
         const suit = event.target.id.split("-")[1]
-        const selectedCard = hand.filter(card => card.suit === suit && card.number === number)[0]
+        const selectedCard = tempHand.filter(card => card.suit === suit && card.number === number)[0]
 
-        hand.forEach(card => {
+        tempHand.forEach(card => {
           if (card.suit === suit && card.number === number) {
             card.hidden = true
           }
         })
   
-        selected.push(selectedCard)
+        tempSelected.push(selectedCard)
   
-        this.setState({
-          hand: hand,
-          selected: selected,
-          cardStart: false
-        })
+        setHand(tempHand)
+        setSelected(tempSelected)
+        setCardStart(false)
+
       } else {
         console.log("Max number of cards is 5")
       }
     }
-
-    this.setState({
-      cardStart: false
-    })
+    setCardStart(false)
   }
 
-  playHand = () => {
-    const { selected, previousHand } = this.state;
-    const { code, username, socket } = this.props;
+  function playHand() {
     const evaluatedHand = evaluateHand(selected, previousHand)
     
     if (evaluatedHand) {
@@ -183,59 +176,47 @@ class GameRoom extends React.Component {
     }
   }
 
-  updateCardWidth = () => {
-    const { hand, cardsPerRow } = this.state
-
+  function updateCardWidth() {
     const tempWidth = window.innerWidth/(cardsPerRow * 1.2)
 
-    this.setState({
-      cardWidth: tempWidth
-    })
+    setCardWidth(tempWidth)
   }
 
-  nextOpponent = () => {
-    let { carouselActive, carouselPlayers } = this.state
-
+  function nextOpponent() {
+    let tempCarouselActive = 0;
     if (carouselActive === carouselPlayers.length - 1) {
-      carouselActive = 0
+      tempCarouselActive = 0
     } else {
-      carouselActive++
+      tempCarouselActive++
     }
 
-    this.setState({
-      carouselActive: carouselActive
-    })
+    setCarouselActive(tempCarouselActive)
   }
 
-  clearHand = () => {
-    let { displayHand } = this.state;
-
-    displayHand.forEach(row => {
+  function clearHand() {
+    let tempDisplayHand = displayHand
+    tempDisplayHand.forEach(row => {
       row.forEach(card => {
         card.hidden = false
       })
     })
 
-    this.setState({
-      displayHand: displayHand,
-      selected: []
-    })
+    setDisplayHand(tempDisplayHand)
+    setSelected([])
   }
 
-  handleStart = () => {
-    this.setState({
-      cardStart: true,
-    })
+  function handleStart() {
+    setCardStart(true)
   }
 
-  stopDrag = (e) => {
-    e.preventDefault()
-    return null
-  }
+  // function stopDrag(e) {
+  //   e.preventDefault()
+  //   return null
+  // }
 
-  render() {
-    const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive, displayHand, cardsPerRow, cardStart, handToBeat } = this.state
-    const { players } = this.props
+  // render() {
+  //   const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive, displayHand, cardsPerRow, cardStart, handToBeat } = this.state
+  //   const { players } = this.props
 
     return(
       <div className="game-room-container">
@@ -275,7 +256,7 @@ class GameRoom extends React.Component {
             }
           </div>
         </div>
-        <div className="clear-hand-button" onClick={this.clearHand}>
+        <div className="clear-hand-button" onClick={clearHand}>
           <span>Clear Hand</span>
         </div>
         <div className="player-field-container">
@@ -291,7 +272,7 @@ class GameRoom extends React.Component {
               "overlay-header": true,
               "skip": selected.length === 0,
               "play": selected.length !== 0
-            })} onClick={this.playHand}>
+            })} onClick={playHand}>
               {
                 selected.length === 0 ? "Skip" : "Play"
               }
@@ -313,7 +294,7 @@ class GameRoom extends React.Component {
                       row.map((card, i) => {
                         return(
                           !card.empty ? 
-                          <Draggable position={{x: 0, y: 0}} onStart={card.hidden || selected.length > 4 ? null : this.handleStart} onStop={selected.length > 4 ? null : this.dropCard} defaultPosition={{x: 0, y: 0}}>
+                          <Draggable position={{x: 0, y: 0}} onStart={card.hidden || selected.length > 4 ? null : handleStart} onStop={selected.length > 4 ? null : dropCard} defaultPosition={{x: 0, y: 0}}>
                             <img key={`img-${i}`} id={`${card.number}-${card.suit}`} className={cx({
                               "card": true,
                               "hidden": card.hidden,
@@ -341,6 +322,6 @@ class GameRoom extends React.Component {
         </div>
       </div>
     )
-  }
+  // }
 }
 export default GameRoom
