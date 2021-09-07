@@ -6,61 +6,42 @@ import Draggable from 'react-draggable';
 
 import { DesktopLg, Desktop, TabletLand, Tablet, Phone, PhoneSm } from '../constants/screenWidth'
 import socket from 'socket.io-client/lib/socket';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
+import { setPlayers } from '../store/actions/game';
 
 function GameRoom(props) {
-  // constructor(props) {
-  //   super(props)
-
-  //   this.state = {
-  //     selected: [],
-  //     cardsPerRow: 13,
-  //     hand: this.props.hand,
-  //     cardWidth: 0,
-  //     carouselPlayers: [...props.players],
-  //     carouselActive: 0,
-  //     displayHand: [],
-  //     cardStart: false,
-  //     previousHand: [],
-  //     handToBeat: null
-  //   }
-  // }
-
-  const [selected, setSelected] = useState([])
-  const [cardsPerRow, setCardsPerRow] = useState(13)
-  const [hand, setHand] = useState(props.hand)
-  const [cardWidth, setCardWidth] = useState(0)
-  const [carouselActive, setCarouselActive] = useState(0)
-  const [displayHand, setDisplayHand] = useState([])
-  const [cardStart, setCardStart] = useState(false)
-  const [previousHand, setPreviousHand] = useState([])
-  const [handToBeat, setHandToBeat] = useState(null)
-
   const carouselPlayers = useSelector(state => state.game.currentPlayers)
   const socket = useSelector(state => state.game.socket)
   const username = useSelector(state => state.game.username)
   const code = useSelector(state => state.game.roomID)
   const location = useLocation()
+  const dispatch = useDispatch()
+
+  const [selected, setSelected] = useState([])
+  const [cardsPerRow, setCardsPerRow] = useState(13)
+  const [hand, setHand] = useState(props.hand)
+  const [cardWidth, setCardWidth] = useState(0)
+  const [carouselActive, setCarouselActive] = useState(props.startingPlayerIndex)
+  const [displayHand, setDisplayHand] = useState([])
+  const [cardStart, setCardStart] = useState(false)
+  const [previousHand, setPreviousHand] = useState([])
+  const [handToBeat, setHandToBeat] = useState(null)
 
   useEffect(() => {
-    const { testing } = props
     const valueHand = hand
 
-    console.log(location)
     if (location.pathname !== "/testRoom") {
       socket.on("hand played", response => {
         if (response) {
           console.log(response)
           setHandToBeat(response.hand)
-          this.setState({
-            handToBeat: response.hand
-          })
           nextOpponent()
         }
       })
     } else {
-      
+      dispatch(setPlayers(["Me", "Opponent 1", "two", "three"]))
+      console.log("Else")
     }
 
     valueHand.forEach(card => {
@@ -77,7 +58,11 @@ function GameRoom(props) {
     window.addEventListener('resize', updateHandRow)
 
     return () => window.removeEventListener('resize', updateHandRow)
-  })
+  }, [])
+
+  useEffect(() => {
+    updateHandRow()
+  }, [hand])
 
   function updateHandRow() {
     const tempHand = hand;
@@ -166,10 +151,12 @@ function GameRoom(props) {
   }
 
   function playHand() {
-    const evaluatedHand = evaluateHand(selected, previousHand)
+    const evaluatedHand = evaluateHand(selected, previousHand, carouselPlayers[props.startingPlayerIndex].toString() === username)
     
     if (evaluatedHand) {
-      console.log(evaluatedHand)
+      const filteredHand = hand.filter(card => !selected.some(DHCard => DHCard.number === card.number && DHCard.suit === card.suit))
+      setHand(filteredHand)
+      setSelected([])
       socket.emit("play hand", { hand: evaluatedHand, name: username, code: code })
     } else {
       console.log("invalid hand")
@@ -208,16 +195,7 @@ function GameRoom(props) {
   function handleStart() {
     setCardStart(true)
   }
-
-  // function stopDrag(e) {
-  //   e.preventDefault()
-  //   return null
-  // }
-
-  // render() {
-  //   const { hand, cardsPerColumn, selected, cardWidth, carouselPlayers, carouselActive, displayHand, cardsPerRow, cardStart, handToBeat } = this.state
-  //   const { players } = this.props
-
+  
     return(
       <div className="game-room-container">
         <div className={cx({"dropzone-container": true, "hidden": !cardStart})}>
@@ -238,7 +216,7 @@ function GameRoom(props) {
                   >
                     <img className="user-img" src="/user.png" alt="" />
                     <div className="user-name">
-                      {player}
+                      {player === username ? `It's your turn!` : `It's ${player}'s turn`}
                     </div>
                   </div>
                 )
@@ -266,15 +244,17 @@ function GameRoom(props) {
             <div className={cx({
               "overlay": true,
               "skip": selected.length === 0,
-              "play": selected.length !== 0
+              "play": selected.length !== 0,
+              "awaiting-turn": carouselPlayers[carouselActive] !== username
             })} />
             <div className={cx({
               "overlay-header": true,
               "skip": selected.length === 0,
-              "play": selected.length !== 0
-            })} onClick={playHand}>
+              "play": selected.length !== 0,
+              "awaiting-turn": carouselPlayers[carouselActive] !== username
+            })} onClick={carouselPlayers[carouselActive] === username ? playHand : null}>
               {
-                selected.length === 0 ? "Skip" : "Play"
+                carouselPlayers[carouselActive] === username ? (selected.length === 0 ? "Skip" : "Play") : "It isn't your turn!"
               }
             </div>
             {
@@ -304,11 +284,7 @@ function GameRoom(props) {
                             />
                           </Draggable>
                           : 
-                          <img key={`img-${i}`} id={`${card.number}-${card.suit}`} className={cx({
-                            // "card": true,
-                            // "hidden": card.hidden,
-                            // "empty": card.empty
-                          })} src="" alt="" 
+                          <img key={`img-${i}`} id={`${card.number}-${card.suit}`} src="" alt="" 
                             style={{'--cards-per-row': cardsPerRow}}
                           />
                         )

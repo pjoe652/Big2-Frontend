@@ -1,42 +1,40 @@
 import React, { useEffect, useState } from 'react'
-import { withRouter } from 'react-router-dom'
+import { useHistory, useLocation, useParams, withRouter } from 'react-router-dom'
 import WaitingRoom from './WaitingRoom'
 import GameRoom from './GameRoom'
-import history from '../utils/history';
 import { useDispatch, useSelector } from 'react-redux';
 
-function Lobby(props) {
+export default function Lobby(props) {
   // const { socket, username, history } = props
 
   const [error, setError] = useState("")
   const [hand, setHand] = useState(null)
   const [gameStarted, setGameStarted] = useState(false)
+  const [startingPlayerIndex, setStartingPlayerIndex] = useState(null)
 
   const socket = useSelector(state => state.game.socket)
   const username = useSelector(state => state.game.username)
   const currentPlayers = useSelector(state => state.game.currentPlayers)
   const dispatch = useDispatch()
-
-  console.log(socket, username, currentPlayers)
+  const history = useHistory()
+  const location = useLocation()
 
   useEffect(() => {
-    console.log("username ", username)
-    if (!username) {
-      // history.push(`/`)
-      // history.go(0)
+    console.log("In lobby")
+    console.log(username, location)
+    if (!username && location.search !== "?test=true") {
+      history.push(`/`)
     } else {
       setGameSockets()
     }
   }, [])
 
   function setGameSockets() {
-    socket.on("new player", user => {
-      dispatch(user)
-    })
-
     socket.on("start game", response => {
       if (response) {
+        console.log(response)
         setHand(response.hand)
+        setStartingPlayerIndex(response.startingPlayerIndex)
         setGameStarted(true)
       }
     })
@@ -52,11 +50,9 @@ function Lobby(props) {
   }
   
   return(
-      // gameStarted ? 
-      //   <GameRoom socket={socket} hand={hand} players={players} username={username} code={roomID}/> 
-      //   : 
+      gameStarted ? 
+        <GameRoom socket={socket} hand={hand} players={currentPlayers} username={username} startingPlayerIndex={startingPlayerIndex}/> 
+        : 
         <WaitingRoom error={error} onStartClick={onStartClick}/>
   )
 }
-
-export default withRouter(Lobby)

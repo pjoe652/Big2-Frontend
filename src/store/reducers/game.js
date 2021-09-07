@@ -1,6 +1,6 @@
 import { createStore, applyMiddleware } from 'redux';
 import createSocketIoMiddleware from 'redux-socket.io';
-import { ADD_PLAYERS, SET_ROUTE, SET_ROOM_ID, SET_USERNAME } from "../constants"
+import { ADD_PLAYERS, SET_ROUTE, SET_ROOM_ID, SET_USERNAME, SET_PLAYERS } from "../constants"
 import socketIOClient from 'socket.io-client';
 
 const ENDPOINT = "http://127.0.0.1:8001/"
@@ -27,6 +27,11 @@ const gameReducer = (state = initialState, action) => {
       return {
         ...state,
         currentPlayers: [...state.currentPlayers, action.payload]
+      }
+    case SET_PLAYERS:
+      return {
+        ...state,
+        currentPlayers: action.payload
       }
     case SET_USERNAME:
       return {

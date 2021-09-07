@@ -33,7 +33,9 @@ function MainPage() {
   }
 
   function joinRoom() {
+    dispatch(setUsername(username))
     socket.emit("join room", { name: username, code: roomID })
+    setRoomIdModal(false)
   }
 
   function createRoom() {

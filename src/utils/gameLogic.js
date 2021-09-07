@@ -3,7 +3,12 @@ import { Hand } from 'pokersolver';
 
 const validFiveCardHands = ["Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight"]
 
-const evaluateHand = (hand, previousHand) => {
+const evaluateHand = (hand, previousHand, startingHand) => {
+  // debugger;
+  if(startingHand && !hand.some(card => card.number === "3" && card.suit === "D")) {
+    return false;
+  }
+
   const adjustedHand = hand.map(card => {
     if (numberValue[card.number] - 1 < 0) {
       return `2${card.suit}`

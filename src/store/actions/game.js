@@ -1,4 +1,4 @@
-import { ADD_PLAYERS, SET_ROUTE, SET_ROOM_ID, SET_USERNAME } from "../constants"
+import { ADD_PLAYERS, SET_ROUTE, SET_ROOM_ID, SET_USERNAME, SET_PLAYERS } from "../constants"
 
 export const setGameRoomID = (roomID) => {
   return {
@@ -11,6 +11,13 @@ export const addPlayers = (player) => {
   return {
     type: ADD_PLAYERS,
     payload: player
+  }
+}
+
+export const setPlayers = (players) => {
+  return {
+    type: SET_PLAYERS,
+    payload: players
   }
 }
 
